@@ -57,7 +57,7 @@ impl BitIter {
             source
                 .bytes()
                 .map(|byte| Bit::from_byte(byte))
-                .fold(Vec::new(), |mut acc, mut cur| {
+                .fold(Vec::new(), |mut acc, cur| {
                     for c in cur {
                         acc.push(c);
                     }
@@ -81,6 +81,14 @@ pub enum Bit {
     One,
 }
 impl Bit {
+    fn to_u8(bits: &[Bit; 8]) -> u8 {
+        (0..8).fold(0, |acc, cur| {
+            acc + match bits[cur] {
+                Self::Zero => 0,
+                Self::One => 2_i32.pow(cur as u32) as u8,
+            }
+        })
+    }
     fn str_to_bit_iter(source: &str) -> BitIter {
         BitIter::new(source)
     }
@@ -100,6 +108,10 @@ impl Bit {
 #[cfg(test)]
 mod bit_test {
     use super::*;
+    #[test]
+    fn to_byte() {
+        assert_eq!(Bit::to_u8(&[Bit::Zero; 8]), 0);
+    }
     #[test]
     fn from_byte_test() {
         assert_eq!(Bit::from_byte(0), [Bit::Zero; 8]);

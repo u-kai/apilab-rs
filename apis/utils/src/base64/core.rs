@@ -9,7 +9,18 @@ pub fn encode<T: AsRef<str>>(source: T) -> String {
     iter.encode(map)
 }
 pub fn decode<T: AsRef<str>>(source: T) -> String {
-    let map = Base64BitMap::new();
+    let source = source.as_ref();
+    let map = super::base64_decode_map::Base64BitMap::new();
+    let mut v = vec![];
+    for c in source.chars() {
+        if c == '=' {
+            todo!("todo case =")
+        }
+        let bit_stream = map.0.get(&c).unwrap();
+        for i in 0..6 {
+            v.push(bit_stream)
+        }
+    }
 
     "Hello,World!".to_string()
 }

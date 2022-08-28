@@ -1,5 +1,3 @@
-use std::{ascii::AsciiExt, fs::File};
-
 fn main() {
     //let mut file = File::create("base64-map.txt");
     let mut file_string = String::new();
@@ -23,7 +21,7 @@ fn main() {
             s = 0;
         }
         file_string = format!(
-            "{}({:?},Base64Stream::new([{}])),\n",
+            "{}({:?},Base64BitStream::new([{}])),\n",
             file_string,
             char.unwrap(),
             str_zero_or_one,
