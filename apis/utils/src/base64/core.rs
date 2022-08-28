@@ -1,4 +1,4 @@
-use super::base64_encode_map::Base64BitMap;
+use super::{base64_encode_map::Base64BitMap, bits::Bit};
 
 pub fn encode<T: AsRef<str>>(source: T) -> String {
     use super::base64_encode_map::Base64BitMap;
@@ -11,15 +11,19 @@ pub fn encode<T: AsRef<str>>(source: T) -> String {
 pub fn decode<T: AsRef<str>>(source: T) -> String {
     let source = source.as_ref();
     let map = super::base64_decode_map::Base64BitMap::new();
-    let mut v = vec![];
+    //let mut v = vec![];
     for c in source.chars() {
         if c == '=' {
             todo!("todo case =")
         }
         let bit_stream = map.0.get(&c).unwrap();
-        for i in 0..6 {
-            v.push(bit_stream)
-        }
+        //for i in 0..6 {
+        //match bit_stream[i] {
+        //Bit::Zero => 0,
+        //Bit::One => 1,
+        //}
+        //v.push(bit_stream)
+        //}
     }
 
     "Hello,World!".to_string()

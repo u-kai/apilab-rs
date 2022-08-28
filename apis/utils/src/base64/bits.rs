@@ -85,7 +85,7 @@ impl Bit {
         (0..8).fold(0, |acc, cur| {
             acc + match bits[cur] {
                 Self::Zero => 0,
-                Self::One => 2_i32.pow(cur as u32) as u8,
+                Self::One => 2_i32.pow(7 - cur as u32) as u8,
             }
         })
     }
@@ -109,8 +109,21 @@ impl Bit {
 mod bit_test {
     use super::*;
     #[test]
-    fn to_byte() {
+    fn to_u8_test() {
         assert_eq!(Bit::to_u8(&[Bit::Zero; 8]), 0);
+        assert_eq!(
+            Bit::to_u8(&[
+                Bit::Zero,
+                Bit::Zero,
+                Bit::Zero,
+                Bit::Zero,
+                Bit::Zero,
+                Bit::Zero,
+                Bit::Zero,
+                Bit::One,
+            ]),
+            1
+        );
     }
     #[test]
     fn from_byte_test() {
