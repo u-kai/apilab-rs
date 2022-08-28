@@ -4,3 +4,8 @@ pub mod base64 {
     pub(super) mod bits;
     pub mod core;
 }
+
+pub mod url_encode {
+    pub mod core;
+    pub(super) mod url_encode_map;
+}

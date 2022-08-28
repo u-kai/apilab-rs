@@ -24,38 +24,6 @@ impl TwitterAccessToken {
             access_token_secret,
         }
     }
-    pub(super) async fn get_access_token(&self) -> Result<TwitterBeareTokenResponse> {
-        let response = self.request_access_token().await?;
-        println!("{:?}", response);
-        Ok(serde_json::from_str(response.as_str()).unwrap())
-        //match serde_json::from_str(response.as_str()) {
-        //Ok(token) => Ok(token),
-        //Err(e) => Err(e),
-        //}
-    }
-    ///-H "Authorization: Basic <BEARER_TOKEN_CREDENTIALS>" \
-    ///-H "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" \
-    ///-d "grant_type=client_credentials" \
-    ///"https://api.twitter.com/oauth2/token"
-    pub async fn request_access_token(&self) -> Result<String> {
-        let request_data = encode(format!(
-            "{}:{}",
-            self.access_token_key, self.access_token_secret
-        ));
-        let auth_header = format!("Basic {}", request_data);
-        let response = reqwest::Client::new()
-            .post("https://api.twitter.com/oauth2/token?grant_type=client_credentials")
-            .basic_auth(&self.access_token_key, Some(&self.access_token_secret))
-            .header(
-                "Content-Type",
-                "application/x-www-form-urlencoded;charset=UTF-8",
-            );
-        //.header("Authorization", auth_header)
-        //.body("grant_type=client_credentials");
-        println!("{:#?}", response);
-        let response = response.send().await?;
-        response.text().await
-    }
 }
 
 pub struct TwitterCunsmerCredentials {
