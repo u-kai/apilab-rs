@@ -1,7 +1,6 @@
 use super::{base64_encode_map::Base64BitMap, bits::Bit};
 
 pub fn encode<T: AsRef<str>>(source: T) -> String {
-    println!("{}", source.as_ref());
     use super::base64_encode_map::Base64BitMap;
     use crate::base64::bits::Base64BitStreamIter;
     let source = source.as_ref();
@@ -60,5 +59,8 @@ mod base64_tests {
         let source = "YWJjZGVmZw==";
         let decoded = decode(source);
         assert_eq!(decoded, "abcdefg".to_string());
+        let source = "Imdvb2RsYWNrMTIzNCI=";
+        let encoded = decode(source);
+        assert_eq!(encoded, r#""goodlack1234""#.to_string());
     }
 }
