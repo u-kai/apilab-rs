@@ -1,5 +1,6 @@
 use super::base64_encode_map::Base64BitMap;
 
+#[derive(Debug)]
 pub struct Base64BitStreamIter {
     bit_iter: BitIter,
 }
@@ -18,9 +19,13 @@ impl Base64BitStreamIter {
             result.push(*value);
             base64 = self.pop_base64_bit();
         }
+        println!("{:?}", result);
+        println!("{:?}", result.len());
         let mod_len = result.len() % 4;
-        for _ in 0..mod_len {
-            result.push('=')
+        if mod_len % 4 != 0 {
+            for _ in 0..(4 - mod_len) {
+                result.push('=')
+            }
         }
         result
     }
@@ -51,6 +56,7 @@ impl Base64BitStream {
         self.stream[i]
     }
 }
+#[derive(Debug)]
 pub struct BitIter {
     bits: Vec<Bit>,
 }
