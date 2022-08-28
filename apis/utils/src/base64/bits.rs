@@ -47,6 +47,9 @@ impl Base64BitStream {
     pub fn new(stream: [Bit; 6]) -> Self {
         Self { stream }
     }
+    pub fn get(&self, i: usize) -> Bit {
+        self.stream[i]
+    }
 }
 pub struct BitIter {
     bits: Vec<Bit>,
@@ -81,7 +84,7 @@ pub enum Bit {
     One,
 }
 impl Bit {
-    fn to_u8(bits: &[Bit; 8]) -> u8 {
+    pub fn to_u8(bits: &[Bit; 8]) -> u8 {
         (0..8).fold(0, |acc, cur| {
             acc + match bits[cur] {
                 Self::Zero => 0,
@@ -89,10 +92,10 @@ impl Bit {
             }
         })
     }
-    fn str_to_bit_iter(source: &str) -> BitIter {
+    pub fn str_to_bit_iter(source: &str) -> BitIter {
         BitIter::new(source)
     }
-    fn from_byte(byte: u8) -> [Bit; 8] {
+    pub fn from_byte(byte: u8) -> [Bit; 8] {
         let mut bits = [Bit::Zero; 8];
         (0..8).for_each(|i| {
             let bit = (byte >> (7 - i)) & 1;
@@ -123,6 +126,19 @@ mod bit_test {
                 Bit::One,
             ]),
             1
+        );
+        assert_eq!(
+            Bit::to_u8(&[
+                Bit::One,
+                Bit::One,
+                Bit::One,
+                Bit::One,
+                Bit::One,
+                Bit::One,
+                Bit::One,
+                Bit::One,
+            ]),
+            255
         );
     }
     #[test]

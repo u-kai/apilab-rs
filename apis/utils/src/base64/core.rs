@@ -11,22 +11,29 @@ pub fn encode<T: AsRef<str>>(source: T) -> String {
 pub fn decode<T: AsRef<str>>(source: T) -> String {
     let source = source.as_ref();
     let map = super::base64_decode_map::Base64BitMap::new();
-    //let mut v = vec![];
+    let mut v = vec![];
     for c in source.chars() {
-        if c == '=' {
-            todo!("todo case =")
+        if c == '=' && v.len() % 8 != 0 {
+            let remove_len = v.len() % 8;
+            for _ in 0..remove_len {
+                v.pop();
+            }
+            break;
         }
         let bit_stream = map.0.get(&c).unwrap();
-        //for i in 0..6 {
-        //match bit_stream[i] {
-        //Bit::Zero => 0,
-        //Bit::One => 1,
-        //}
-        //v.push(bit_stream)
-        //}
+        for i in 0..6 {
+            v.push(bit_stream.get(i));
+        }
     }
-
-    "Hello,World!".to_string()
+    let mut tmp = [Bit::Zero; 8];
+    let mut byte = vec![];
+    for i in 1..=v.len() {
+        tmp[(i - 1) % 8] = v[i - 1];
+        if i % 8 == 0 {
+            byte.push(Bit::to_u8(&tmp));
+        }
+    }
+    String::from_utf8(byte).unwrap()
 }
 
 #[cfg(test)]
@@ -41,9 +48,13 @@ mod base64_tests {
         let encoded = encode(source);
         assert_eq!(encoded, "YWJjZGVmZw==".to_string());
     }
+    #[test]
     fn base64_decode_test() {
         let source = "SGVsbG8sV29ybGQh";
         let decoded = decode(source);
         assert_eq!(decoded, "Hello,World!".to_string());
+        let source = "YWJjZGVmZw==";
+        let decoded = decode(source);
+        assert_eq!(decoded, "abcdefg".to_string());
     }
 }
