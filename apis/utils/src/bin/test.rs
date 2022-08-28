@@ -15,7 +15,6 @@ fn main() {
             })
             .fold(String::new(), |acc, cur| format!("{}{},", acc, cur));
         let char: Result<char, _> = s.try_into();
-        println!("{:?}", char.unwrap());
         s += 1;
         if s == 91 {
             s = 97
@@ -24,10 +23,10 @@ fn main() {
             s = 0;
         }
         file_string = format!(
-            "{}(Base64BitStream::new([{}]),{:?}),\n",
+            "{}({:?},Base64Stream::new([{}])),\n",
             file_string,
+            char.unwrap(),
             str_zero_or_one,
-            char.unwrap()
         );
         byte += 1;
     }

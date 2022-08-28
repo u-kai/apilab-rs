@@ -18,6 +18,10 @@ impl Base64BitStreamIter {
             result.push(*value);
             base64 = self.pop_base64_bit();
         }
+        let mod_len = result.len() % 4;
+        for _ in 0..mod_len {
+            result.push('=')
+        }
         result
     }
     fn pop_base64_bit(&mut self) -> Option<Base64BitStream> {
@@ -25,7 +29,10 @@ impl Base64BitStreamIter {
         for i in 0..6 {
             let bit = self.bit_iter.next();
             if bit.is_none() {
-                return None;
+                if i == 0 {
+                    return None;
+                }
+                return Some(Base64BitStream { stream });
             }
             stream[i] = bit.unwrap().clone()
         }
