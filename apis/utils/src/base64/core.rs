@@ -1,4 +1,4 @@
-use super::{base64_encode_map::Base64BitMap, bits::Bit};
+use super::bits::Bit;
 
 pub fn encode<T: AsRef<str>>(source: T) -> String {
     use super::base64_encode_map::Base64BitMap;

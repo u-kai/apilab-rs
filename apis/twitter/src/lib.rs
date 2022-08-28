@@ -6,4 +6,8 @@ mod tests {
         assert_eq!(result, 4);
     }
 }
-pub mod auth;
+pub mod apis {
+    pub(super) mod auth;
+    pub mod client;
+    pub(super) mod error;
+}

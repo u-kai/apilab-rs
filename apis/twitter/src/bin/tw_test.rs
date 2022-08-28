@@ -1,10 +1,10 @@
 use reqwest::Result;
-use twitter::auth::TwitterCunsmerCredentials;
+use twitter::apis::client::TwitterClient;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let t_auth = TwitterCunsmerCredentials::from_env();
-    let text = t_auth.get_beare_token().await?;
-    println!("{}", text);
+    let client = TwitterClient::from_env().await?;
+    let covid_19 = client.search_hash("rust").await?;
+    println!("{:#?}", covid_19);
     Ok(())
 }

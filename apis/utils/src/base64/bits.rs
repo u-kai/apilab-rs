@@ -19,8 +19,6 @@ impl Base64BitStreamIter {
             result.push(*value);
             base64 = self.pop_base64_bit();
         }
-        println!("{:?}", result);
-        println!("{:?}", result.len());
         let mod_len = result.len() % 4;
         if mod_len % 4 != 0 {
             for _ in 0..(4 - mod_len) {
