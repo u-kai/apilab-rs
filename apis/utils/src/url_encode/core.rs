@@ -15,11 +15,9 @@ impl UrlEncoder {
             let add = if c.len_utf8() > 1 {
                 (0..c.len_utf8()).fold(String::new(), |acc, cur| format!("{}%{:X}", acc, dst[cur]))
             } else {
-                let encoded = self.map.0.get(&c);
-                if encoded.is_some() {
-                    encoded.unwrap().to_string()
-                } else {
-                    format!("{}", c)
+                match self.map.0.get(&c) {
+                    Some(encoded) => encoded.to_string(),
+                    None => format!("{}", c),
                 }
             };
             format!("{}{}", acc, add)

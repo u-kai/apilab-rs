@@ -49,11 +49,8 @@ impl TwitterCunsmerCredentials {
     pub(super) async fn get_access_token(&self) -> Result<TwitterBeareTokenResponse> {
         let response = self.request_access_token().await?;
         Ok(serde_json::from_str(response.as_str()).unwrap())
-        //match serde_json::from_str(response.as_str()) {
-        //Ok(token) => Ok(token),
-        //Err(e) => Err(e),
-        //}
     }
+
     ///-H "Authorization: Basic <BEARER_TOKEN_CREDENTIALS>" \
     ///-H "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" \
     ///-d "grant_type=client_credentials" \

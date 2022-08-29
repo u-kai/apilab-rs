@@ -4,7 +4,8 @@ use twitter::apis::client::TwitterClient;
 #[tokio::main]
 async fn main() -> Result<()> {
     let client = TwitterClient::from_env().await?;
-    let covid_19 = client.search_hash("rust").await?;
-    println!("{:#?}", covid_19);
+    let response = client
+        .search_rec("#浜辺美波&media.fields=url&max_results=50", 5)
+        .await?;
     Ok(())
 }

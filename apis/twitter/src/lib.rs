@@ -10,4 +10,8 @@ pub mod apis {
     pub(super) mod auth;
     pub mod client;
     pub(super) mod error;
+    pub mod responses {
+        pub(super) mod example;
+        pub mod meta;
+    }
 }
