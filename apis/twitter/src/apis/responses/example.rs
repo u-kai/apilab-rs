@@ -1,4 +1,4 @@
-#[allow(text_direction_codepoint_in_literal)]
+#[allow(text_direction_codepoint_in_literal, unused)]
 pub const RESPONSE_EXAMPLE: &'static str = r#"
 {
     "data": [

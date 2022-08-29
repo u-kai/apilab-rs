@@ -4,11 +4,13 @@ use reqwest::Result;
 use serde::{Deserialize, Serialize};
 use utils::base64::core::encode;
 
+#[allow(unused)]
 pub struct TwitterAccessToken {
     access_token_key: String,
     access_token_secret: String,
 }
 impl TwitterAccessToken {
+    #[allow(unused)]
     pub fn new(access_token_key: String, access_token_secret: String) -> Self {
         Self {
             access_token_key,
@@ -16,6 +18,7 @@ impl TwitterAccessToken {
         }
     }
     /// please set env TWITTER_API_KEY and TWITTER_API_SECRET
+    #[allow(unused)]
     pub fn from_env() -> Self {
         let access_token_key = env::var("TWITTER_ACCESS_TOKEN_KEY").unwrap();
         let access_token_secret = env::var("TWITTER_ACCESS_TOKEN_SECRET").unwrap();
@@ -31,6 +34,7 @@ pub struct TwitterCunsmerCredentials {
     cunsmer_secret: String,
 }
 impl TwitterCunsmerCredentials {
+    #[allow(unused)]
     pub fn new(cunsmer_key: String, cunsmer_secret: String) -> Self {
         Self {
             cunsmer_key,

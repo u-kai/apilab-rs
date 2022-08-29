@@ -1,6 +1,13 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
 
+use crate::attach_twitter_response;
+attach_twitter_response!(
+    TwitterApiResponseLimitMeta,
+    TwitterApiResponseLimitMetaData,
+    TwitterApiResponseMeta,
+    TwitterApiResponseMetaData
+);
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct TwitterApiResponseMeta {
     meta: TwitterApiResponseMetaData,
@@ -38,6 +45,7 @@ struct TwitterApiResponseMetaData {
     next_token: String,
 }
 
+#[cfg(test)]
 mod meta_test {
     use crate::apis::responses::example::RESPONSE_EXAMPLE;
 
@@ -60,7 +68,7 @@ mod meta_test {
                 )
             }
             Err(e) => {
-                println!("fjaklsfjals;df{:#?}", e);
+                println!("{:?}", e);
                 assert!(false)
             }
         }

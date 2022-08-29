@@ -7,7 +7,7 @@ use crate::apis::responses::meta::TwitterApiResponseLimitMeta;
 
 use super::{
     auth::{TwitterBeareTokenResponse, TwitterCunsmerCredentials},
-    responses::meta::TwitterApiResponseMeta,
+    responses::{meta::TwitterApiResponseMeta, search::TwitterSearchResponse},
 };
 
 pub struct TwitterClient {
@@ -17,13 +17,20 @@ pub struct TwitterClient {
 impl TwitterClient {
     pub async fn from_env() -> Result<Self> {
         let auth = TwitterCunsmerCredentials::from_env();
-        println!("send access token request");
         let query_builder = SearchQueryBuilder::new();
         let token = auth.get_access_token().await?;
         Ok(Self {
             token,
             query_builder,
         })
+    }
+    pub async fn search_rec_with_hash(
+        &self,
+        free_hash_query: &str,
+        count: usize,
+    ) -> Result<String> {
+        let query = self.query_builder.encode_query("#") + &free_hash_query;
+        self.search_rec(&query, count).await
     }
     pub async fn search_rec(&self, free_query: &str, count: usize) -> Result<String> {
         let mut result = String::new();
@@ -35,10 +42,10 @@ impl TwitterClient {
                 Ok(meta) => {
                     new_query = format!("{}&next_token={}", free_query, meta.next_token());
                     result = format!("{} time {}\n", i, response);
-                    println!("{}", result)
                 }
                 Err(_) => {
-                    let meta = TwitterApiResponseLimitMeta::new(&response).unwrap();
+                    let meta = TwitterApiResponseLimitMeta::new(&response)
+                        .expect(&format!("{}", response));
                     if meta.is_limit() {
                         println!("Reach Twitter Limit");
                         println!("So Wait 15 minite");
@@ -48,13 +55,16 @@ impl TwitterClient {
                     }
                 }
             }
+            let data =
+                TwitterSearchResponse::new(&response).expect(&format!("not parse \n{}", response));
+            data.print();
         }
         Ok(result)
     }
     pub async fn search(&self, free_query: &str) -> Result<String> {
         let url = format!(
             "https://api.twitter.com/2/tweets/search/recent/?query={}",
-            self.query_builder.encode_query(free_query)
+            free_query
         );
         let header = self.token.create_auth_header();
         let client = reqwest::Client::new();
@@ -90,10 +100,12 @@ impl SearchQueryBuilder {
         }
     }
     fn encode_query(&self, query: &str) -> String {
-        self.url_encoder.encode(query)
+        let e = self.url_encoder.encode(query);
+        println!("{}", e);
+        e
     }
     fn hash(&self, data: &str) -> String {
         let encoded = self.url_encoder.encode(format!("#{}", data).as_str());
-        format!(r"{}", encoded)
+        format!("{}", encoded)
     }
 }

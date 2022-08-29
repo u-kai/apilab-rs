@@ -9,9 +9,11 @@ mod tests {
 pub mod apis {
     pub(super) mod auth;
     pub mod client;
-    pub(super) mod error;
     pub mod responses {
+        pub mod data;
         pub(super) mod example;
         pub mod meta;
+        pub mod search;
+        pub mod twitter_response;
     }
 }

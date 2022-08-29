@@ -5,7 +5,7 @@ use twitter::apis::client::TwitterClient;
 async fn main() -> Result<()> {
     let client = TwitterClient::from_env().await?;
     let response = client
-        .search_rec("#浜辺美波&media.fields=url&max_results=50", 5)
+        .search_rec_with_hash("浜辺美波&tweet.fields=entities&max_results=10", 5)
         .await?;
     Ok(())
 }
