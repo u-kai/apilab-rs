@@ -9,6 +9,7 @@ mod tests {
 pub mod apis {
     pub(super) mod auth;
     pub mod client;
+    pub mod query_builder;
     pub mod responses {
         pub mod data;
         pub(super) mod example;
