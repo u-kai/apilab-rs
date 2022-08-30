@@ -1,4 +1,5 @@
 use super::url_encode_map::UrlEncodeExceptionMap;
+#[derive(Debug, Default)]
 pub struct UrlEncoder {
     map: UrlEncodeExceptionMap,
 }

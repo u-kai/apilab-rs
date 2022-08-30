@@ -8,12 +8,13 @@ use super::{
     auth::{TwitterBeareTokenResponse, TwitterCunsmerCredentials},
     responses::{meta::TwitterApiResponseMeta, search::TwitterSearchResponse},
 };
+#[derive(Debug)]
 pub struct SearchQuery {
     query: String,
     origin_query: String,
 }
 impl SearchQuery {
-    fn new(query: String) -> Self {
+    pub fn new(query: String) -> Self {
         Self {
             origin_query: query.clone(),
             query,
@@ -23,6 +24,7 @@ impl SearchQuery {
         self.query = format!("{}&next_token={}", self.origin_query, next_token)
     }
     fn use_query(&self) -> &str {
+        println!("use query = {}", self.query);
         &self.query
     }
 }

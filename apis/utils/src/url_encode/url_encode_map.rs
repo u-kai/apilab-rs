@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+#[derive(Debug, Default)]
 pub(super) struct UrlEncodeExceptionMap(pub HashMap<char, &'static str>);
 impl UrlEncodeExceptionMap {
     pub fn new() -> Self {
