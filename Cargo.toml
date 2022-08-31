@@ -1,5 +1,6 @@
 [workspace]
 members = [
     "apis/utils",
-    "apis/twitter"
+    "apis/twitter",
+    "tools",
 ]
