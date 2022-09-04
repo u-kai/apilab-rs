@@ -7,6 +7,36 @@ use std::{
 use serde_json::{Map, Result, Value};
 
 #[derive(Debug, Clone)]
+struct PubStruct {
+    name: String,
+}
+impl PubStruct {
+    fn new(struct_name: impl Into<String>) -> Self {
+        Self {
+            name: struct_name.into(),
+        }
+    }
+    fn is_pub(&self, struct_name: &str) -> bool {
+        self.name == struct_name
+    }
+}
+#[derive(Debug, Clone)]
+struct PubFiled {
+    struct_name: String,
+    filed_name: String,
+}
+impl PubFiled {
+    fn new(struct_name: impl Into<String>, filed_name: impl Into<String>) -> Self {
+        Self {
+            struct_name: struct_name.into(),
+            filed_name: filed_name.into(),
+        }
+    }
+    fn is_pub(&self, struct_name: &str, filed_name: &str) -> bool {
+        self.struct_name == struct_name && self.filed_name == filed_name
+    }
+}
+#[derive(Debug, Clone)]
 struct RequireFiled {
     struct_name: String,
     filed_name: String,
@@ -26,7 +56,8 @@ pub struct JsonStructBuilder {
     derive: String,
     struct_name: String,
     require_fileds: Vec<RequireFiled>,
-    pub_fileds: Option<Vec<String>>,
+    pub_fileds: Vec<PubFiled>,
+    pub_structs: Vec<PubStruct>,
 }
 
 impl JsonStructBuilder {
@@ -35,7 +66,8 @@ impl JsonStructBuilder {
             derive: "Serialize,Desrialize".to_string(),
             struct_name: struct_name.into(),
             require_fileds: Vec::new(),
-            pub_fileds: None,
+            pub_fileds: Vec::new(),
+            pub_structs: Vec::new(),
         }
     }
     fn inherit_option_fileds(
@@ -48,6 +80,7 @@ impl JsonStructBuilder {
             struct_name: struct_name.into(),
             require_fileds: self.require_fileds.clone(),
             pub_fileds: self.pub_fileds.clone(),
+            pub_structs: self.pub_structs.clone(),
         }
     }
     pub fn new_with_drives(derives: Vec<&str>, struct_name: impl Into<String>) -> Self {
@@ -55,8 +88,23 @@ impl JsonStructBuilder {
             derive: derives.join(",").to_string(),
             struct_name: struct_name.into(),
             require_fileds: Vec::new(),
-            pub_fileds: None,
+            pub_fileds: Vec::new(),
+            pub_structs: Vec::new(),
         }
+    }
+    pub fn set_pub_struct(&mut self, struct_name: impl Into<String>) -> &mut Self {
+        self.pub_structs.push(PubStruct::new(struct_name));
+        self
+    }
+    pub fn set_pub(
+        &mut self,
+        struct_name: impl Into<String> + Clone,
+        filed_name: impl Into<String>,
+    ) -> &mut Self {
+        self.pub_fileds
+            .push(PubFiled::new(struct_name.clone(), filed_name));
+        self.pub_structs.push(PubStruct::new(struct_name));
+        self
     }
     pub fn set_require(
         &mut self,
@@ -101,8 +149,22 @@ impl JsonStructBuilder {
             .iter()
             .any(|req| req.is_require(&self.struct_name, filed_name))
     }
+    fn is_pub_field(&self, filed_name: &str) -> bool {
+        self.pub_fileds
+            .iter()
+            .any(|pub_| pub_.is_pub(&self.struct_name, filed_name))
+    }
+    fn is_pub_struct(&self) -> bool {
+        self.pub_structs
+            .iter()
+            .any(|pub_| pub_.is_pub(&self.struct_name))
+    }
     fn case_object(&self, object: &Map<String, Value>, child_buffer: &mut Vec<String>) -> String {
-        let mut object_string = self.struct_statement();
+        let mut object_string = if self.is_pub_struct() {
+            self.pub_struct_statement()
+        } else {
+            self.struct_statement()
+        };
         for key in object.keys() {
             let child_object = object.get(key).unwrap();
             let child_object_value = match child_object {
@@ -124,13 +186,23 @@ impl JsonStructBuilder {
                 Value::Bool(_) => self.case_bool(Some(key)),
                 Value::Number(_) => self.case_number(Some(key)),
             };
-            object_string = format!(
-                "{}{}: {}{}",
-                object_string,
-                key,
-                child_object_value,
-                Self::field_derimita()
-            )
+            object_string = if self.is_pub_field(key) {
+                format!(
+                    "{}pub {}: {}{}",
+                    object_string,
+                    key,
+                    child_object_value,
+                    Self::field_derimita()
+                )
+            } else {
+                format!(
+                    "{}{}: {}{}",
+                    object_string,
+                    key,
+                    child_object_value,
+                    Self::field_derimita()
+                )
+            }
         }
         let result = format!("{}}}", &object_string[..(object_string.len() - 4)]);
         result
@@ -203,9 +275,6 @@ impl JsonStructBuilder {
         }
     }
     fn case_number(&self, key: Option<&str>) -> String {
-        println!("key {:?} ", key);
-        println!("self.is {:?} ", &self.struct_name);
-        println!("self.fileds {:?} ", &self.require_fileds);
         match key {
             Some(key) if self.is_require(key) => {
                 format!("f64")
@@ -233,6 +302,13 @@ impl JsonStructBuilder {
             .collect::<String>();
         format!("{}{}", self.struct_name, child_struct_name)
     }
+    fn pub_struct_statement(&self) -> String {
+        format!(
+            "{}\npub struct {} {{\n    ",
+            self.derive_statement(),
+            self.struct_name,
+        )
+    }
     fn struct_statement(&self) -> String {
         format!(
             "{}\nstruct {} {{\n    ",
@@ -251,6 +327,85 @@ impl JsonStructBuilder {
 mod json_define_to_struct {
     use super::*;
     const FIELD_SPACE: &str = "\n    ";
+    #[test]
+    fn test_set_pub_struct() {
+        let complicated_json = r#"
+            {
+                "data":[
+                    {
+                        "id":12345,
+                        "test":"test-string",
+                        "entities":{
+                            "id":0
+                        }
+                    }
+                ]
+            }
+        "#;
+        let struct_name = "TestJson";
+        let tobe = r#"#[derive(Serialize,Desrialize)]
+pub struct TestJson {
+    data: Option<Vec<TestJsonData>>,
+}
+#[derive(Serialize,Desrialize)]
+struct TestJsonData {
+    entities: Option<TestJsonDataEntities>,
+    id: Option<f64>,
+    test: Option<String>,
+}
+#[derive(Serialize,Desrialize)]
+pub struct TestJsonDataEntities {
+    id: Option<f64>,
+}"#
+        .to_string();
+        let mut builder =
+            JsonStructBuilder::new_with_drives(vec!["Serialize", "Desrialize"], struct_name);
+        builder
+            .set_pub_struct("TestJson")
+            .set_pub_struct("TestJsonDataEntities");
+        assert_eq!(builder.from_json_example(complicated_json).unwrap(), tobe);
+    }
+    #[test]
+    fn test_set_pub() {
+        let complicated_json = r#"
+            {
+                "data":[
+                    {
+                        "id":12345,
+                        "test":"test-string",
+                        "entities":{
+                            "id":0
+                        }
+                    }
+                ]
+            }
+        "#;
+        let struct_name = "TestJson";
+        let tobe = r#"#[derive(Serialize,Desrialize)]
+pub struct TestJson {
+    pub data: Vec<TestJsonData>,
+}
+#[derive(Serialize,Desrialize)]
+pub struct TestJsonData {
+    entities: Option<TestJsonDataEntities>,
+    pub id: f64,
+    test: Option<String>,
+}
+#[derive(Serialize,Desrialize)]
+pub struct TestJsonDataEntities {
+    pub id: Option<f64>,
+}"#
+        .to_string();
+        let mut builder =
+            JsonStructBuilder::new_with_drives(vec!["Serialize", "Desrialize"], struct_name);
+        builder
+            .set_require("TestJson", "data")
+            .set_require("TestJsonData", "id")
+            .set_pub("TestJson", "data")
+            .set_pub("TestJsonData", "id")
+            .set_pub("TestJsonDataEntities", "id");
+        assert_eq!(builder.from_json_example(complicated_json).unwrap(), tobe);
+    }
     #[test]
     fn test_add_require() {
         let complicated_json = r#"
