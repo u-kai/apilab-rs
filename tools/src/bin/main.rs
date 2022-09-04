@@ -1,3 +1,15 @@
+use tools::auto_type_define::json_to_struct::parse;
+
 fn main() {
-    println!("Hello, world!");
+    let s = r#"
+    {
+        "data":[
+            {
+                "id":103,
+                "name":"kai"
+            }
+        ]
+    }
+    "#;
+    println!("{:#?}", parse(s));
 }
