@@ -11,6 +11,6 @@ async fn main() -> Result<()> {
         .add_entities_filed()
         .add_max_results(10);
     let query = query_builder.build_query();
-    client.search_rec(query, 5).await?;
+    let data = client.search_rec(query, 5).await?;
     Ok(())
 }

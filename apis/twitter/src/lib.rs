@@ -11,11 +11,10 @@ pub mod apis {
     pub mod client;
     pub mod query_builder;
     pub mod responses {
-        pub mod data;
         pub(super) mod example;
-        pub mod meta;
-        pub mod search;
-        pub mod search_response;
-        pub mod twitter_response;
+        pub(super) mod search;
+        pub(super) mod impls {
+            pub mod search;
+        }
     }
 }

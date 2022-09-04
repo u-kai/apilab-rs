@@ -2,11 +2,9 @@ use std::{thread, time};
 
 use reqwest::Result;
 
-use crate::apis::responses::meta::TwitterApiResponseLimitMeta;
-
 use super::{
     auth::{TwitterBeareTokenResponse, TwitterCunsmerCredentials},
-    responses::{meta::TwitterApiResponseMeta, search::TwitterSearchResponse},
+    responses::search::TwitterSearchResponse,
 };
 #[derive(Debug)]
 pub struct SearchQuery {
@@ -37,33 +35,20 @@ impl TwitterClient {
         let token = auth.get_access_token().await?;
         Ok(Self { token })
     }
-    pub async fn search_rec(&self, mut query: SearchQuery, count: usize) -> Result<String> {
-        let mut result = String::new();
-        for i in 0..count {
+    pub async fn search_rec(
+        &self,
+        mut query: SearchQuery,
+        count: usize,
+    ) -> Result<TwitterSearchResponse> {
+        let mut search_result = TwitterSearchResponse::new();
+        for _ in 0..count {
             let response = self.search(query.use_query()).await?;
-            let meta = TwitterApiResponseMeta::new(&response);
-            match meta {
-                Ok(meta) => {
-                    query.set_next_token(meta.next_token());
-                    result = format!("{} time {}\n", i, response);
-                }
-                Err(_) => {
-                    let meta = TwitterApiResponseLimitMeta::new(&response)
-                        .expect(&format!("{}", response));
-                    if meta.is_limit() {
-                        println!("Reach Twitter Limit");
-                        println!("So Wait 15 minite");
-                        Self::sleep();
-                    } else {
-                        println!("rare case meta = {:#?}", meta);
-                    }
-                }
-            }
-            let data =
-                TwitterSearchResponse::new(&response).expect(&format!("not parse \n{}", response));
-            data.print();
+            let response = TwitterSearchResponse::from_response(&response).unwrap();
+            search_result.concat_other(response);
+            let next_token = search_result.get_next_token();
+            query.set_next_token(next_token);
         }
-        Ok(result)
+        Ok(search_result)
     }
     pub async fn search(&self, free_query: &str) -> Result<String> {
         let url = format!(
