@@ -1,11 +1,43 @@
 use std::{
+    collections::HashMap,
     fs::File,
     io::{BufWriter, Write},
     path::Path,
+    rc::Rc,
 };
 
 use serde_json::{Map, Result, Value};
 
+#[derive(Debug, Clone)]
+struct ReservedWords(Rc<HashMap<&'static str, &'static str>>);
+impl ReservedWords {
+    fn new() -> Self {
+        let mut map = HashMap::new();
+        map.insert("type", "r#type");
+        map.insert("use", "r#use");
+        map.insert("as", "r#as");
+        map.insert("if", "r#if");
+        map.insert("super", "r#super");
+        map.insert("crate", "r#crate");
+        map.insert("abstract", "r#abstruct");
+        map.insert("typeof", "r#typeof");
+        map.insert("mod", "r#mod");
+        map.insert("self", "r#self");
+        map.insert("Self", "r#Self");
+        map.insert("extern", "r#extern");
+        map.insert("f64", "r#f64");
+        Self(Rc::new(map))
+    }
+    fn get_or_default(&self, key: &str) -> String {
+        match self.0.get(key) {
+            Some(reseved) => reseved.to_string(),
+            None => key.to_string(),
+        }
+    }
+    fn clone(&self) -> Self {
+        ReservedWords(self.0.clone())
+    }
+}
 #[derive(Debug, Clone)]
 struct PubStruct {
     name: String,
@@ -58,17 +90,29 @@ pub struct JsonStructBuilder {
     require_fileds: Vec<RequireFiled>,
     pub_fileds: Vec<PubFiled>,
     pub_structs: Vec<PubStruct>,
+    reserveds: ReservedWords,
+    is_all_pub: bool,
 }
 
 impl JsonStructBuilder {
     pub fn new(struct_name: impl Into<String>) -> Self {
         Self {
-            derive: "Serialize,Desrialize".to_string(),
+            derive: "Serialize,Deserialize".to_string(),
             struct_name: struct_name.into(),
             require_fileds: Vec::new(),
             pub_fileds: Vec::new(),
             pub_structs: Vec::new(),
+            reserveds: ReservedWords::new(),
+            is_all_pub: false,
         }
+    }
+    pub fn set_all_pub(&mut self) -> &mut Self {
+        self.is_all_pub = true;
+        self
+    }
+    pub fn add_derive(&mut self, derive: impl Into<String>) -> &mut Self {
+        self.derive = format!("{},{}", self.derive, derive.into());
+        self
     }
     fn inherit_option_fileds(
         &self,
@@ -81,6 +125,8 @@ impl JsonStructBuilder {
             require_fileds: self.require_fileds.clone(),
             pub_fileds: self.pub_fileds.clone(),
             pub_structs: self.pub_structs.clone(),
+            reserveds: self.reserveds.clone(),
+            is_all_pub: self.is_all_pub,
         }
     }
     pub fn new_with_drives(derives: Vec<&str>, struct_name: impl Into<String>) -> Self {
@@ -90,6 +136,8 @@ impl JsonStructBuilder {
             require_fileds: Vec::new(),
             pub_fileds: Vec::new(),
             pub_structs: Vec::new(),
+            reserveds: ReservedWords::new(),
+            is_all_pub: false,
         }
     }
     pub fn set_pub_struct(&mut self, struct_name: impl Into<String>) -> &mut Self {
@@ -120,7 +168,10 @@ impl JsonStructBuilder {
         source: &str,
         file_path: impl AsRef<Path>,
     ) -> Result<()> {
-        let string = self.from_json_example(source)?;
+        let string = format!(
+            "use serde::{{Deserialize, Serialize}};\n{}",
+            self.from_json_example(source)?
+        );
         let buf = string.as_bytes();
         let file = File::create(file_path).unwrap();
         let mut writer = BufWriter::new(file);
@@ -150,11 +201,17 @@ impl JsonStructBuilder {
             .any(|req| req.is_require(&self.struct_name, filed_name))
     }
     fn is_pub_field(&self, filed_name: &str) -> bool {
+        if self.is_all_pub {
+            return true;
+        }
         self.pub_fileds
             .iter()
             .any(|pub_| pub_.is_pub(&self.struct_name, filed_name))
     }
     fn is_pub_struct(&self) -> bool {
+        if self.is_all_pub {
+            return true;
+        }
         self.pub_structs
             .iter()
             .any(|pub_| pub_.is_pub(&self.struct_name))
@@ -190,7 +247,7 @@ impl JsonStructBuilder {
                 format!(
                     "{}pub {}: {}{}",
                     object_string,
-                    key,
+                    self.reserveds.get_or_default(key),
                     child_object_value,
                     Self::field_derimita()
                 )
@@ -198,7 +255,7 @@ impl JsonStructBuilder {
                 format!(
                     "{}{}: {}{}",
                     object_string,
-                    key,
+                    self.reserveds.get_or_default(key),
                     child_object_value,
                     Self::field_derimita()
                 )
@@ -294,12 +351,19 @@ impl JsonStructBuilder {
         let json: Value = serde_json::from_str(source)?;
         Ok(json)
     }
-    fn key_to_struct_name(&self, key: &str) -> String {
-        let child_struct_name = key
-            .chars()
+    fn snake_to_camel(key: &str) -> String {
+        key.split('_').fold(String::new(), |acc, cur| {
+            format!("{}{}", acc, Self::flat_to_camel(cur))
+        })
+    }
+    fn flat_to_camel(key: &str) -> String {
+        key.chars()
             .enumerate()
             .map(|(i, c)| if i == 0 { c.to_ascii_uppercase() } else { c })
-            .collect::<String>();
+            .collect::<String>()
+    }
+    fn key_to_struct_name(&self, key: &str) -> String {
+        let child_struct_name = Self::snake_to_camel(key);
         format!("{}{}", self.struct_name, child_struct_name)
     }
     fn pub_struct_statement(&self) -> String {

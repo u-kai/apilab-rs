@@ -15,6 +15,7 @@ pub mod apis {
         pub(super) mod example;
         pub mod meta;
         pub mod search;
+        pub mod search_response;
         pub mod twitter_response;
     }
 }
