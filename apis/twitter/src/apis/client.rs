@@ -1,9 +1,12 @@
-use std::{thread, time};
+use std::{cell::RefCell, collections::HashMap, hash, thread, time};
 
 use reqwest::Result;
+use serde::Serialize;
+use utils::oauth::core::OAuth1RequestToken;
 
 use super::{
-    auth::{TwitterBeareTokenResponse, TwitterCunsmerCredentials},
+    auth::{TwitterBeareTokenResponse, TwitterConsumerCredentials},
+    oauth1::TwitterOAuth1Handler,
     responses::search::TwitterSearchResponse,
 };
 #[derive(Debug)]
@@ -28,12 +31,32 @@ impl SearchQuery {
 }
 pub struct TwitterClient {
     token: TwitterBeareTokenResponse,
+    oauth1_handler: RefCell<TwitterOAuth1Handler>,
 }
 impl TwitterClient {
     pub async fn from_env() -> Result<Self> {
-        let auth = TwitterCunsmerCredentials::from_env();
+        let auth = TwitterConsumerCredentials::from_env();
         let token = auth.get_access_token().await?;
-        Ok(Self { token })
+        let oauth1_handler = RefCell::new(TwitterOAuth1Handler::from_env());
+        Ok(Self {
+            token,
+            oauth1_handler,
+        })
+    }
+    pub async fn get_request_token(&self) -> Result<OAuth1RequestToken> {
+        self.oauth1_handler.borrow().get_request_token().await
+    }
+    pub async fn tweet(&self, tweet: &str) -> Result<()> {
+        self.oauth1_handler
+            .borrow_mut()
+            .change_endpoint(&Self::gen_twitter_url("tweets"));
+        let response = self
+            .oauth1_handler
+            .borrow()
+            .request(&format!(r#"{{"text":"{}"}}"#, tweet))
+            .await?;
+        println!("success {:?}", response);
+        Ok(())
     }
     pub async fn search_rec(
         &self,
@@ -68,6 +91,9 @@ impl TwitterClient {
             .await?;
         let text = response.text().await?;
         Ok(text)
+    }
+    fn gen_twitter_url(path: &str) -> String {
+        format!("https://api.twitter.com/2/{}", path)
     }
     fn sleep() {
         thread::sleep(time::Duration::from_secs(900))

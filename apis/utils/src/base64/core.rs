@@ -1,5 +1,12 @@
 use super::bits::Bit;
 
+pub fn encode_from_byte(source: &[u8]) -> String {
+    use super::base64_encode_map::Base64BitMap;
+    use crate::base64::bits::Base64BitStreamIter;
+    let map = Base64BitMap::new();
+    let mut iter = Base64BitStreamIter::from_bytes(source);
+    iter.encode(map)
+}
 pub fn encode<T: AsRef<str>>(source: T) -> String {
     use super::base64_encode_map::Base64BitMap;
     use crate::base64::bits::Base64BitStreamIter;
@@ -39,6 +46,7 @@ pub fn decode<T: AsRef<str>>(source: T) -> String {
 #[cfg(test)]
 mod base64_tests {
     use super::*;
+    #[test]
     #[test]
     fn base64_encode_test() {
         let source = "Hello,World!";

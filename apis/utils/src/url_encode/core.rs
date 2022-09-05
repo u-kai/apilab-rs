@@ -1,5 +1,5 @@
 use super::url_encode_map::UrlEncodeExceptionMap;
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct UrlEncoder {
     map: UrlEncodeExceptionMap,
 }
@@ -23,6 +23,10 @@ impl UrlEncoder {
             };
             format!("{}{}", acc, add)
         })
+    }
+    pub fn regist_non_encode(&mut self, c: char) -> &mut Self {
+        self.map.remove(&c);
+        self
     }
 }
 

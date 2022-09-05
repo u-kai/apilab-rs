@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub(super) struct UrlEncodeExceptionMap(pub HashMap<char, &'static str>);
 impl UrlEncodeExceptionMap {
     pub fn new() -> Self {
@@ -40,6 +40,9 @@ impl UrlEncodeExceptionMap {
         map.insert('}', "%7D");
         map.insert('~', "~");
         Self(map)
+    }
+    pub fn remove(&mut self, c: &char) {
+        self.0.remove(c);
     }
 }
 
