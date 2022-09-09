@@ -50,6 +50,18 @@ mod oauth1_authorizer_test {
 
     use super::*;
     #[test]
+    fn authorization_url_test() {
+        let oauth1_authorizer = OAuth1Authorizer {
+            endpoint: "https://api.twitter.com/oauth/authorize".to_string(),
+            url_encoder: UrlEncoder::for_oauth(),
+            oauth_callback: "https://127.0.0.1/callback".to_string(),
+            oauth_token: "sdf0o9823sjdfsdf".to_string(),
+        };
+        let url = oauth1_authorizer.authorization_url();
+        let tobe ="https://api.twitter.com/oauth/authorize?oauth_token=sdf0o9823sjdfsdf&oauth_callback=https%3A%2F%2F127.0.0.1%2Fcallback";
+        assert_eq!(&url, tobe);
+    }
+    #[test]
 
     fn parse_authorization_response_test() {
         let authorizer = OAuth1Authorizer {

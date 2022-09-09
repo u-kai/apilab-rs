@@ -9,6 +9,15 @@ impl UrlEncoder {
             map: UrlEncodeExceptionMap::new(),
         }
     }
+    pub fn for_oauth() -> Self {
+        let mut url_encoder = UrlEncoder::new();
+        url_encoder
+            .regist_non_encode('*')
+            .regist_non_encode('-')
+            .regist_non_encode('.')
+            .regist_non_encode('_');
+        url_encoder
+    }
     pub fn encode(&self, source: &str) -> String {
         source.chars().fold(String::new(), |acc, c| {
             let mut dst = [0; 4];
