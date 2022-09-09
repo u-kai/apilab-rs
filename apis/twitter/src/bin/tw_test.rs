@@ -1,11 +1,15 @@
 use reqwest::Result;
-use twitter::apis::{client::TwitterClient, query_builder::SearchQueryBuilder};
+use twitter::apis::{
+    client::TwitterClient, oauth1::TwitterOAuth1Handler, query_builder::SearchQueryBuilder,
+};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let client = TwitterClient::from_env().await?;
-    //let query = "浜辺美波";
-    println!("{:#?}", client.get_request_token().await?);
+    //let query = "浜辺美波"; tweet
+
+    //println!("{:#?}", client.tweet("hello").await?);
+
     //let mut query_builder = SearchQueryBuilder::new(query);
     //query_builder
     //.add_hash()

@@ -10,5 +10,6 @@ pub mod url_encode {
     pub(super) mod url_encode_map;
 }
 pub mod oauth {
+    pub(super) mod authorizer;
     pub mod core;
 }

@@ -9,7 +9,7 @@ mod tests {
 pub mod apis {
     pub(super) mod auth;
     pub mod client;
-    pub(super) mod oauth1;
+    pub mod oauth1;
     pub mod query_builder;
     pub mod responses {
         pub(super) mod example;
