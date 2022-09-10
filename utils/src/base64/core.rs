@@ -47,7 +47,6 @@ pub fn decode<T: AsRef<str>>(source: T) -> String {
 mod base64_tests {
     use super::*;
     #[test]
-    #[test]
     fn base64_encode_test() {
         let source = "Hello,World!";
         let encoded = encode(source);
