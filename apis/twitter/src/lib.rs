@@ -7,10 +7,15 @@ mod tests {
     }
 }
 pub mod apis {
-    pub(super) mod auth;
+    pub(super) mod auth {
+        pub mod auth;
+        pub mod oauth1;
+    }
     pub mod client;
-    pub mod oauth1;
-    pub mod query_builder;
+    pub mod query {
+        pub(super) mod query;
+        pub mod query_builder;
+    }
     pub mod responses {
         pub(super) mod example;
         pub(super) mod search;

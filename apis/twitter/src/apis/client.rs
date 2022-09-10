@@ -1,72 +1,37 @@
-use std::{thread, time};
-
-use reqwest::Result;
-//use serde::Serialize;
-//use utils::oauth::core::OAuth1RequestToken;
-
 use super::{
-    auth::{TwitterBeareTokenResponse, TwitterConsumerCredentials},
-    oauth1::TwitterOAuth1Handler,
+    auth::{
+        auth::{TwitterBeareTokenResponse, TwitterConsumerCredentials},
+        oauth1::TwitterOAuth1Handler,
+    },
+    query::query::SearchQuery,
     responses::search::TwitterSearchResponse,
 };
-#[derive(Debug)]
-pub struct SearchQuery {
-    query: String,
-    origin_query: String,
-}
-impl SearchQuery {
-    pub fn new(query: String) -> Self {
-        Self {
-            origin_query: query.clone(),
-            query,
-        }
-    }
-    fn set_next_token(&mut self, next_token: &str) {
-        self.query = format!("{}&next_token={}", self.origin_query, next_token)
-    }
-    fn use_query(&self) -> &str {
-        println!("use query = {}", self.query);
-        &self.query
-    }
-}
+use reqwest::{
+    header::{HeaderMap, CONTENT_TYPE},
+    Result,
+};
+
 pub struct TwitterClient {
     token: TwitterBeareTokenResponse,
-    oauth1_handler: TwitterOAuth1Handler,
+    oauth1: TwitterOAuth1Handler,
 }
 impl TwitterClient {
     pub async fn from_env() -> Result<Self> {
         let auth = TwitterConsumerCredentials::from_env();
         let token = auth.get_access_token().await?;
-        // let token_ge = OAuth1TokenGetter::new()
-        let oauth1_handler = TwitterOAuth1Handler::from_env_2();
-        //let oauth1_handler = TwitterOAuth1Handler::from_env().await?;
-        Ok(Self {
-            token,
-            oauth1_handler, //: TwitterOAuth1Handler::from_env(),
-        })
+        let oauth1 = TwitterOAuth1Handler::from_env();
+        Ok(Self { token, oauth1 })
     }
-    pub async fn delete(&self, id: &str) -> Result<()> {
-        let url = format!("{}/{}", Self::gen_twitter_url("tweets"), id);
-        let client = reqwest::Client::new();
-        let response = client.delete(url).send().await?;
-        //let response = self
-        //.oauth1_handler
-        //.request(&Self::gen_twitter_url("tweets"), headers, "")
-        //.await?;
-        println!("success {:?}", response.text().await?);
+    pub async fn tweet(&self, tweet: &str) -> Result<()> {
+        let mut headers = HeaderMap::new();
+        headers.insert(CONTENT_TYPE, "application/json".parse().unwrap());
+        let body = format!(r#"{{ "text":"{}" }}"#, tweet);
+        let _ = self
+            .oauth1
+            .post(&Self::gen_twitter_url("tweets"), headers, &body)
+            .await?;
         Ok(())
     }
-    //pub async fn tweet(&self, tweet: &str) -> Result<()> {
-    //let mut headers = HeaderMap::new();
-    //headers.insert(CONTENT_TYPE, "application/json".parse().unwrap());
-    //let body = format!(r#"{{ "text":"{}" }}"#, tweet);
-    //let response = self
-    //.oauth1_handler
-    //.request(&Self::gen_twitter_url("tweets"), headers, &body)
-    //.await?;
-    //println!("success {:?}", response);
-    //Ok(())
-    //}
     pub async fn search_rec(
         &self,
         mut query: SearchQuery,
@@ -103,8 +68,5 @@ impl TwitterClient {
     }
     fn gen_twitter_url(path: &str) -> String {
         format!("https://api.twitter.com/2/{}", path)
-    }
-    fn sleep() {
-        thread::sleep(time::Duration::from_secs(900))
     }
 }

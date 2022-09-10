@@ -23,7 +23,6 @@ pub struct OAuth1AccessToken {
 }
 #[derive(Clone, Debug)]
 pub struct OAuth1 {
-    callback_url: String,
     consumer_key: String,
     consumer_secret: String,
     access_token: String,
@@ -32,9 +31,23 @@ pub struct OAuth1 {
     url_encoder: UrlEncoder,
 }
 impl OAuth1 {
-    pub fn new(consumer_key: &str, consumer_secret: &str, callback_url: &str) -> Self {
+    pub fn new(
+        consumer_key: String,
+        consumer_secret: String,
+        access_token: String,
+        access_token_secret: String,
+    ) -> Self {
         Self {
-            callback_url: callback_url.to_string(),
+            consumer_key,
+            consumer_secret,
+            access_token,
+            access_token_secret: Some(access_token_secret),
+            access_token_verifier: None,
+            url_encoder: UrlEncoder::for_oauth(),
+        }
+    }
+    pub fn new_without_token(consumer_key: &str, consumer_secret: &str) -> Self {
+        Self {
             consumer_secret: consumer_secret.to_string(),
             consumer_key: consumer_key.to_string(),
             url_encoder: UrlEncoder::for_oauth(),
@@ -49,7 +62,7 @@ impl OAuth1 {
     pub fn set_access_token_secret(&mut self, access_token_secret: &str) {
         self.access_token_secret = Some(access_token_secret.to_string());
     }
-    pub async fn set_secret_by_oauth_session(&mut self) -> Result<()> {
+    pub async fn set_secret_by_oauth_session(&mut self, callback_url: &str) -> Result<()> {
         fn get_line() -> String {
             let mut line = String::new();
             let stdin = stdin();
@@ -66,14 +79,15 @@ impl OAuth1 {
         let authorize_url = get_line();
         println!(
             "click here: {}",
-            self.authorization_url(authorize_url.as_str())
+            self.authorization_url(authorize_url.as_str(), callback_url)
         );
         println!("please enter redirect response");
         let redirect_response = get_line();
         self.set_authorization_response(redirect_response.as_str());
         println!("please enter access url");
         let access_url = get_line();
-        self.fetch_and_set_access_token(access_url.as_str()).await?;
+        self.fetch_and_set_access_token(access_url.as_str(), callback_url)
+            .await?;
         Ok(())
     }
     pub async fn post(
@@ -105,7 +119,11 @@ impl OAuth1 {
             .text()
             .await
     }
-    pub async fn fetch_and_set_access_token(&mut self, endpoint: &str) -> Result<()> {
+    pub async fn fetch_and_set_access_token(
+        &mut self,
+        endpoint: &str,
+        callback_url: &str,
+    ) -> Result<()> {
         let mut add_header = BTreeMap::new();
         add_header.insert("oauth_token", self.access_token.as_str());
         add_header.insert(
@@ -115,6 +133,7 @@ impl OAuth1 {
                 .map(|s| s.as_str())
                 .unwrap(),
         );
+        add_header.insert("oauth_callback", callback_url);
         let headers = self.create_header_value(endpoint, Some(add_header));
         let response = Self::request(endpoint, self.create_auth_header(headers.as_str())).await?;
         let mut response = response
@@ -156,12 +175,12 @@ impl OAuth1 {
         self.access_token = oauth_token;
         Ok(())
     }
-    pub fn authorization_url(&self, authorization_url: &str) -> String {
+    pub fn authorization_url(&self, authorization_url: &str, callback_url: &str) -> String {
         format!(
             "{}?oauth_token={}&oauth_callback={}",
             authorization_url,
             self.url_encoder.encode(&self.access_token),
-            self.url_encoder.encode(&self.callback_url)
+            self.url_encoder.encode(callback_url)
         )
     }
     async fn request(endpoint: &str, headers: HeaderMap) -> Result<String> {
@@ -189,7 +208,7 @@ impl OAuth1 {
         params.insert("oauth_signature_method", SIGNATURE_METHOD);
         params.insert("oauth_timestamp", timestamp.as_str());
         params.insert("oauth_version", "1.0");
-        params.insert("oauth_callback", &self.callback_url);
+        //params.insert("oauth_callback", callback_url);
         params.insert("oauth_consumer_key", &self.consumer_key);
         let signature = self.create_oauth_signature(endpoint, &params);
         params.insert("oauth_signature", &signature);
@@ -269,9 +288,11 @@ mod oauth_test {
         //this secret is example at https://developer.twitter.com/ja/docs/authentication/oauth-1-0a/creating-a-signature
         let consumer_key = "xvz1evFS4wEEPTGEFPHBog";
         let consumer_secret = "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw";
-        let oauth = OAuth1::new(consumer_key, consumer_secret, "http://localhost");
+        let oauth = OAuth1::new_without_token(consumer_key, consumer_secret);
+        let mut headers = BTreeMap::new();
+        headers.insert("oauth_callback", "http://localhost");
         assert_eq!(
-            oauth.create_header_value("https://test", None),
+            oauth.create_header_value("https://test",Some(headers)),
             r#"OAuth oauth_callback="http%3A%2F%2Flocalhost", oauth_consumer_key="xvz1evFS4wEEPTGEFPHBog", oauth_nonce="nonce1600000000", oauth_signature="WiPE4O+xuu1addbb1tInN5xgyTc%3D", oauth_signature_method="HMAC-SHA1", oauth_timestamp="1600000000", oauth_version="1.0""#.to_string()
         )
     }
@@ -280,9 +301,9 @@ mod oauth_test {
         use super::*;
         let consumer_key = "xvz1evFS4wEEPTGEFPHBog";
         let consumer_secret = "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw";
-        let oauth = OAuth1::new(consumer_key, consumer_secret, "http://localhost");
+        let oauth = OAuth1::new_without_token(consumer_key, consumer_secret);
         assert_eq!(
-            oauth.authorization_url("https://test"),
+            oauth.authorization_url("https://test", "http://localhost"),
             r#"https://test?oauth_token=&oauth_callback=http%3A%2F%2Flocalhost"#.to_string()
         )
     }

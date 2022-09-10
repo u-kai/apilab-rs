@@ -50,7 +50,7 @@ impl TwitterConsumerCredentials {
             consumer_secret,
         }
     }
-    pub(super) async fn get_access_token(&self) -> Result<TwitterBeareTokenResponse> {
+    pub async fn get_access_token(&self) -> Result<TwitterBeareTokenResponse> {
         let response = self.request_access_token().await?;
         Ok(serde_json::from_str(response.as_str()).unwrap())
     }
@@ -76,12 +76,12 @@ impl TwitterConsumerCredentials {
 }
 
 #[derive(Serialize, Deserialize)]
-pub(super) struct TwitterBeareTokenResponse {
+pub struct TwitterBeareTokenResponse {
     pub token_type: String,
     pub access_token: String,
 }
 impl TwitterBeareTokenResponse {
-    pub(super) fn create_auth_header(&self) -> (&str, String) {
+    pub fn create_auth_header(&self) -> (&str, String) {
         ("Authorization", format!("Bearer {}", self.access_token))
     }
 }

@@ -1,8 +1,10 @@
 use chrono::{Date, Local};
 use utils::url_encode::core::UrlEncoder;
 
-use super::client::SearchQuery;
+use super::query::SearchQuery;
+
 #[derive(Default, Debug)]
+#[allow(unused)]
 pub struct SearchQueryBuilder {
     query: String,
     url_encoder: UrlEncoder,
@@ -15,6 +17,7 @@ pub struct SearchQueryBuilder {
     tweet_fileds: Option<TweetsFieldQueryParameters>,
 }
 
+#[allow(unused)]
 impl SearchQueryBuilder {
     pub fn new(query: impl Into<String>) -> Self {
         Self {
@@ -47,26 +50,19 @@ impl SearchQueryBuilder {
         ))
     }
     fn encode_query(&self, query: &str) -> String {
-        let e = self.url_encoder.encode(query);
-        println!("{}", e);
-        e
+        self.url_encoder.encode(query)
     }
     fn hash(&self, data: &str) -> String {
         let encoded = self.url_encoder.encode(format!("#{}", data).as_str());
         format!("{}", encoded)
     }
 }
-/// attachments,author_id,context_annotations,
-/// conversation_id,created_at,entities,geo,id,
-/// in_reply_to_user_id,lang,non_public_metrics,
-/// organic_metrics,possibly_sensitive,promoted_metrics,
-/// public_metrics,referenced_tweets,
-/// reply_settings,source,text,withheld
 
 trait ToQuery {
     fn to_query(&self) -> String;
 }
 #[derive(Default, Debug)]
+#[allow(unused)]
 struct TweetsFieldQueryParameters {
     attachments: Option<TweetsFieldAttachments>,
     author_id: Option<String>,
@@ -85,6 +81,7 @@ impl ToQuery for TweetsFieldQueryParameters {
     }
 }
 #[derive(Default, Debug)]
+#[allow(unused)]
 struct PublicMetrics {
     retweet_count: usize,
     reply_count: usize,
@@ -92,6 +89,7 @@ struct PublicMetrics {
     quote_count: usize,
 }
 #[derive(Default, Debug)]
+#[allow(unused)]
 struct TweetsFieldEntities {
     annotations: Option<Vec<EntitiesAnnotation>>,
 }
@@ -101,12 +99,14 @@ impl ToQuery for TweetsFieldEntities {
     }
 }
 #[derive(Default, Debug)]
+#[allow(unused)]
 struct EntitiesAnnotation {
     start: usize,
     end: usize,
     probability: f64,
 }
 #[derive(Default, Debug)]
+#[allow(unused)]
 struct TweetsFieldAttachments {
     media_keys: Vec<String>,
 }
