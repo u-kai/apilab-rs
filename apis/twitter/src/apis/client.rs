@@ -1,11 +1,8 @@
-use std::{cell::RefCell, collections::HashMap, hash, thread, time};
+use std::{thread, time};
 
-use reqwest::{
-    header::{HeaderMap, CONTENT_TYPE},
-    Result,
-};
-use serde::Serialize;
-use utils::oauth::core::{OAuth1RequestToken, OAuth1RequestTokenFetcher};
+use reqwest::Result;
+//use serde::Serialize;
+//use utils::oauth::core::OAuth1RequestToken;
 
 use super::{
     auth::{TwitterBeareTokenResponse, TwitterConsumerCredentials},
