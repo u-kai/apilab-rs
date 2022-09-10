@@ -8,7 +8,10 @@ use reqwest::{
 
 use crate::{base64::core::encode_from_byte, url_encode::core::UrlEncoder};
 
-use super::authorizer::OAuth1Authorizer;
+use super::{
+    authorizer::OAuth1Authorizer,
+    util::{gen_timestamp, SIGNATURE_METHOD},
+};
 
 #[derive(Clone, Debug)]
 pub struct OAuth1Handler {
@@ -16,7 +19,7 @@ pub struct OAuth1Handler {
     oauth_consumer_secret: String,
     oauth_token: String,
     oauth_token_secret: String,
-    oauth_signature_method: String,
+    oauth_signature_method: &'static str,
     url_encoder: UrlEncoder,
 }
 impl OAuth1Handler {
@@ -25,20 +28,14 @@ impl OAuth1Handler {
         oauth_consumer_secret: &str,
         oauth_token: &str,
         oauth_token_secret: &str,
-        oauth_signature_method: &str,
     ) -> Self {
-        let mut url_encoder = UrlEncoder::new();
-        url_encoder
-            .regist_non_encode('*')
-            .regist_non_encode('-')
-            .regist_non_encode('.')
-            .regist_non_encode('_');
+        let url_encoder = UrlEncoder::for_oauth();
         Self {
             oauth_consumer_key: oauth_consumer_key.to_string(),
             oauth_consumer_secret: oauth_consumer_secret.to_string(),
             oauth_token: oauth_token.to_string(),
             oauth_token_secret: oauth_token_secret.to_string(),
-            oauth_signature_method: oauth_signature_method.to_string(),
+            oauth_signature_method: SIGNATURE_METHOD,
             url_encoder,
         }
     }
@@ -136,12 +133,7 @@ impl OAuth1RequestTokenFetcher {
         oauth_consumer_key: &str,
         oauth_consumer_secret: &str,
     ) -> Self {
-        let mut url_encoder = UrlEncoder::new();
-        url_encoder
-            .regist_non_encode('*')
-            .regist_non_encode('-')
-            .regist_non_encode('.')
-            .regist_non_encode('_');
+        let url_encoder = UrlEncoder::for_oauth();
         Self {
             endpoint: endpoint.to_string(),
             oauth_callback: oauth_callback.to_string(),
@@ -167,7 +159,7 @@ impl OAuth1RequestTokenFetcher {
             oauth_consumer_secret: self.oauth_consumer_secret,
             oauth_token: request_token.oauth_token,
             oauth_token_secret: request_token.oauth_token_secret,
-            oauth_signature_method: self.oauth_signature_method,
+            oauth_signature_method: SIGNATURE_METHOD,
             url_encoder: self.url_encoder,
         })
     }
@@ -272,4 +264,62 @@ pub struct OAuth1RequestToken {
 pub struct OAuth1AccessToken {
     pub oauth_token: String,
     pub oauth_token_secret: String,
+}
+pub struct OAuth1 {
+    aouth_consumer_key: String,
+    url_encoder: UrlEncoder,
+}
+impl OAuth1 {
+    fn new(consumer_key: &str) -> Self {
+        Self {
+            aouth_consumer_key: consumer_key.to_string(),
+            url_encoder: UrlEncoder::for_oauth(),
+        }
+    }
+    fn gen_request_header(&self) -> String {
+        let mut params = BTreeMap::new();
+        let timestamp = gen_timestamp();
+        let nonce = Self::gen_nonce(&timestamp);
+        params.insert("oauth_consumer_key", self.aouth_consumer_key.as_str());
+        params.insert("oauth_nonce", &nonce);
+        params.insert("oauth_signature_method", SIGNATURE_METHOD);
+        params.insert("oauth_timestamp", timestamp.as_str());
+        params.insert("oauth_token", "");
+        params.insert("oauth_version", "1.0");
+        let mut header_auth = params
+            .iter()
+            .fold(String::from("OAuth "), |acc, (param, value)| {
+                format!(r#"{}{}="{}", "#, acc, param, self.url_encoder.encode(value))
+            });
+        header_auth.pop();
+        header_auth.pop();
+        header_auth
+    }
+    fn gen_nonce(timestamp: &str) -> String {
+        format!("nonce{}", timestamp)
+    }
+}
+
+mod oauth_test {
+    use super::*;
+    #[test]
+    fn oauth_request_header_test() {
+        let oauth_consumer_key = "consumer_key";
+        let oauth_nonce = "nonce1600000000";
+        let oauth_signature_method = SIGNATURE_METHOD;
+        let oauth_timestamp = "1600000000";
+        let oauth_token = "";
+        let oauth_version = "1.0";
+        let oauth1 = OAuth1::new(oauth_consumer_key);
+        let tobe = format!(
+            r#"OAuth oauth_consumer_key="{}", oauth_nonce="{}", oauth_signature_method="{}", oauth_timestamp="{}", oauth_token="{}", oauth_version="{}""#,
+            oauth_consumer_key,
+            oauth_nonce,
+            oauth_signature_method,
+            oauth_timestamp,
+            oauth_token,
+            oauth_version
+        );
+        assert_eq!(oauth1.gen_request_header(), tobe);
+    }
 }

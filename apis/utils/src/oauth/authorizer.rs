@@ -8,6 +8,7 @@ pub struct OAuth1Authorizer {
     pub url_encoder: UrlEncoder,
 }
 impl OAuth1Authorizer {
+    //pub async fn fetch_access_token(&self)->
     pub fn parse_authorization_response(
         &self,
         redirect_response: &str,

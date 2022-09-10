@@ -17,7 +17,6 @@ impl TwitterOAuth1Handler {
             &cumsumer_credentials.consumer_secret,
             &access_token.access_token_key,
             &access_token.access_token_secret,
-            "HMAC-SHA1",
         );
         println!("oauth_handler: {:#?}", oauth_handler);
         Self { oauth_handler }
