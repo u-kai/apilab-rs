@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 use chrono::Utc;
 use reqwest::{
@@ -265,61 +265,144 @@ pub struct OAuth1AccessToken {
     pub oauth_token: String,
     pub oauth_token_secret: String,
 }
+struct OAuth1Signature;
+impl OAuth1Signature {
+    fn to_string(self) -> String {
+        format!("")
+    }
+}
 pub struct OAuth1 {
-    aouth_consumer_key: String,
+    consumer_key: String,
+    consumer_secret: String,
+    access_token: String,
+    access_token_secret: Option<String>,
     url_encoder: UrlEncoder,
 }
 impl OAuth1 {
-    fn new(consumer_key: &str) -> Self {
+    pub fn new(consumer_key: &str, consumer_secret: &str) -> Self {
         Self {
-            aouth_consumer_key: consumer_key.to_string(),
+            consumer_secret: consumer_secret.to_string(),
+            consumer_key: consumer_key.to_string(),
             url_encoder: UrlEncoder::for_oauth(),
+            access_token: "".to_string(),
+            access_token_secret: None,
         }
     }
-    fn gen_request_header(&self) -> String {
+    pub async fn fetch_request_token(
+        &self,
+        endpoint: &str,
+        custom_params: Option<BTreeMap<&str, &str>>,
+    ) -> Result<OAuth1RequestToken> {
+        let header_auth = self.fetch_request_token_header(endpoint, custom_params);
+        let header = self.create_auth_header(&header_auth);
+        let client = reqwest::Client::new();
+        let response = client
+            .post(endpoint)
+            .headers(header)
+            .send()
+            .await?
+            .text()
+            .await?;
+        let mut response = response.split('&').map(|s| {
+            let mut splited = s.split('=');
+            splited.next();
+            splited.next().expect(&format!("error {}", response))
+        });
+        Ok(OAuth1RequestToken {
+            oauth_token: response.next().unwrap().to_string(),
+            oauth_token_secret: response.next().unwrap().to_string(),
+            oauth_callback_confirmed: response.next().unwrap().to_string(),
+        })
+    }
+    fn fetch_request_token_header(
+        &self,
+        endpoint: &str,
+        custom_params: Option<BTreeMap<&str, &str>>,
+    ) -> String {
         let mut params = BTreeMap::new();
-        let timestamp = gen_timestamp();
-        let nonce = Self::gen_nonce(&timestamp);
-        params.insert("oauth_consumer_key", self.aouth_consumer_key.as_str());
-        params.insert("oauth_nonce", &nonce);
+        let timestamp = Self::create_timestamp_param();
+        let nonce = Self::create_nonce_param(&timestamp);
+        if let Some(mut custom_params) = custom_params {
+            params.append(&mut custom_params)
+        }
+        params.insert("oauth_nonce", nonce.as_str());
         params.insert("oauth_signature_method", SIGNATURE_METHOD);
         params.insert("oauth_timestamp", timestamp.as_str());
-        params.insert("oauth_token", "");
         params.insert("oauth_version", "1.0");
+        params.insert("oauth_consumer_key", &self.consumer_key);
+        let signature = self.create_oauth_signature(endpoint, &params);
+        params.insert("oauth_signature", &signature);
+        self.params_to_authrization_header(params)
+    }
+    fn params_to_authrization_header(&self, params: BTreeMap<&str, &str>) -> String {
         let mut header_auth = params
             .iter()
             .fold(String::from("OAuth "), |acc, (param, value)| {
-                format!(r#"{}{}="{}", "#, acc, param, self.url_encoder.encode(value))
+                format!(
+                    r#"{}{}="{}", "#,
+                    acc,
+                    self.url_encoder.encode(param),
+                    self.url_encoder.encode(value)
+                )
             });
         header_auth.pop();
         header_auth.pop();
         header_auth
     }
-    fn gen_nonce(timestamp: &str) -> String {
+    fn create_oauth_signature(&self, endpoint: &str, params: &BTreeMap<&str, &str>) -> String {
+        let consumer_secret_encoded = self.url_encoder.encode(&self.consumer_secret);
+        let token_secret_encoded = self.url_encoder.encode(&self.access_token);
+        let key = format!("{}&{}", consumer_secret_encoded, token_secret_encoded);
+        let params = params.iter().fold(String::new(), |acc, (k, v)| {
+            format!(
+                "{}{}={}&",
+                acc,
+                self.url_encoder.encode(k),
+                self.url_encoder.encode(v)
+            )
+        });
+        let params = &params[..params.len() - 1];
+        let http_method_encoded = self.url_encoder.encode("POST");
+        let endpoint_encoded = self.url_encoder.encode(endpoint);
+        let params_encoded = self.url_encoder.encode(params);
+        let message = format!(
+            "{}&{}&{}",
+            http_method_encoded, endpoint_encoded, params_encoded
+        );
+        let hash = hmacsha1::hmac_sha1(key.as_bytes(), message.as_bytes());
+        encode_from_byte(&hash)
+    }
+    fn set_access_token(&mut self, access_token: String) {
+        self.access_token = access_token
+    }
+    fn create_auth_header(&self, auth_header: &str) -> HeaderMap {
+        let mut header = HeaderMap::new();
+        header.insert(AUTHORIZATION, auth_header.parse().unwrap());
+        header.insert(
+            CONTENT_TYPE,
+            HeaderValue::from_static("application/x-www-form-urlencoded"),
+        );
+        header
+    }
+    fn create_nonce_param(timestamp: &str) -> String {
         format!("nonce{}", timestamp)
+    }
+    fn create_timestamp_param() -> String {
+        gen_timestamp()
     }
 }
 
 mod oauth_test {
     use super::*;
     #[test]
-    fn oauth_request_header_test() {
-        let oauth_consumer_key = "consumer_key";
-        let oauth_nonce = "nonce1600000000";
-        let oauth_signature_method = SIGNATURE_METHOD;
-        let oauth_timestamp = "1600000000";
-        let oauth_token = "";
-        let oauth_version = "1.0";
-        let oauth1 = OAuth1::new(oauth_consumer_key);
-        let tobe = format!(
-            r#"OAuth oauth_consumer_key="{}", oauth_nonce="{}", oauth_signature_method="{}", oauth_timestamp="{}", oauth_token="{}", oauth_version="{}""#,
-            oauth_consumer_key,
-            oauth_nonce,
-            oauth_signature_method,
-            oauth_timestamp,
-            oauth_token,
-            oauth_version
-        );
-        assert_eq!(oauth1.gen_request_header(), tobe);
+    fn fetch_request_token_header_test() {
+        //this secret is example at https://developer.twitter.com/ja/docs/authentication/oauth-1-0a/creating-a-signature
+        let consumer_key = "xvz1evFS4wEEPTGEFPHBog";
+        let consumer_secret = "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw";
+        let oauth = OAuth1::new(consumer_key, consumer_secret);
+        assert_eq!(
+            oauth.fetch_request_token_header("https://test", None),
+            r#"OAuth oauth_consumer_key="xvz1evFS4wEEPTGEFPHBog", oauth_nonce="nonce1600000000", oauth_signature="7rOW2w89OgncjDmosV0lASI0ChA%3D", oauth_signature_method="HMAC-SHA1", oauth_timestamp="1600000000", oauth_version="1.0""#.to_string()
+        )
     }
 }

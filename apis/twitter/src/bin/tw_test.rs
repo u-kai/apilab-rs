@@ -5,7 +5,8 @@ use twitter::apis::{
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let client = TwitterClient::from_env().await?;
+    //let client = TwitterClient::from_env().await?;
+    let auth = TwitterOAuth1Handler::from_env().await?;
     //let query = "浜辺美波"; tweet
 
     //println!("{:#?}", client.tweet("hello").await?);

@@ -1,4 +1,5 @@
 pub const SIGNATURE_METHOD: &'static str = "HMAC-SHA1";
+use super::*;
 
 #[cfg(not(test))]
 pub fn gen_timestamp() -> String {
