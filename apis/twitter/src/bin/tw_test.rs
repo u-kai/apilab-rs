@@ -9,10 +9,8 @@ async fn main() -> Result<()> {
     query_builder
         .add_hash()
         .add_entities_filed()
-        .add_max_results(10);
+        .add_max_results(100);
     let query = query_builder.build_query();
-    let data = client.search_rec(query, 5).await?;
-    println!("{:#?}", data);
-    client.tweet("rust lang is very nice!!").await?;
+    let data = client.search_rec(query, 10, |_| {}).await?;
     Ok(())
 }

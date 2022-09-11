@@ -21,16 +21,15 @@ async fn main() -> Result<()> {
         .add_entities_filed()
         .add_max_results(10);
     let query = query_builder.build_query();
-    let data = client.search_rec(query, 5).await?;
-    println!("{:#?}", data);
+    client.search_rec(query, 5,|result|{println!("{:?}",result)}).await?;
     Ok(())
 }
 ```
 
-## twieet
+## tweet
 
-- twieet api is use access_token and access_token_secret
-- twieet is use oauth1
+- tweet api is use access_token and access_token_secret
+- tweet is use oauth1
 
 ```rust
 use reqwest::Result;

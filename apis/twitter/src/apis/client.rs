@@ -4,7 +4,10 @@ use super::{
         oauth1::TwitterOAuth1Handler,
     },
     query::query::SearchQuery,
-    responses::search::TwitterSearchResponse,
+    responses::{
+        rate_limit::TwitterRateLimit,
+        search::{TwitterSearchResponse, TwitterSearchResponseData},
+    },
 };
 use reqwest::{
     header::{HeaderMap, CONTENT_TYPE},
@@ -32,20 +35,37 @@ impl TwitterClient {
             .await?;
         Ok(())
     }
-    pub async fn search_rec(
-        &self,
-        mut query: SearchQuery,
-        count: usize,
-    ) -> Result<TwitterSearchResponse> {
-        let mut search_result = TwitterSearchResponse::new();
+    pub async fn search_rec<F>(&self, mut query: SearchQuery, count: usize, f: F) -> Result<()>
+    where
+        F: Fn(&TwitterSearchResponse),
+    {
+        //let mut search_result = TwitterSearchResponse::new();
         for _ in 0..count {
             let response = self.search(query.use_query()).await?;
-            let response = TwitterSearchResponse::from_response(&response).unwrap();
-            search_result.concat_other(response);
-            let next_token = search_result.get_next_token();
-            query.set_next_token(next_token);
+            let response = TwitterSearchResponse::from_response(&response);
+            match response {
+                Ok(response) => {
+                    f(&response);
+                    //search_result.concat_other(response);
+                    let next_token = response.get_next_token();
+                    if next_token.is_none() {
+                        return Ok(());
+                    }
+                    query.set_next_token(next_token.unwrap());
+                }
+                Err(response) => {
+                    let error = serde_json::from_str::<TwitterRateLimit>(&response);
+                    match error {
+                        Ok(e) => {
+                            println!("caues rate limit! so wait 15 minite");
+                            e.sleep_until_twitter_api_able();
+                        }
+                        Err(e) => panic!("{:#?}", e),
+                    }
+                }
+            }
         }
-        Ok(search_result)
+        Ok(())
     }
     pub async fn search(&self, free_query: &str) -> Result<String> {
         let url = format!(

@@ -1,11 +1,3 @@
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
-    }
-}
 pub mod apis {
     pub(super) mod auth {
         pub mod auth;
@@ -22,5 +14,6 @@ pub mod apis {
         pub(super) mod impls {
             pub mod search;
         }
+        pub(super) mod rate_limit;
     }
 }

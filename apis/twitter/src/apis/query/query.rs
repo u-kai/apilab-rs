@@ -14,7 +14,6 @@ impl SearchQuery {
         self.query = format!("{}&next_token={}", self.origin_query, next_token)
     }
     pub fn use_query(&self) -> &str {
-        println!("use query = {}", self.query);
         &self.query
     }
 }
