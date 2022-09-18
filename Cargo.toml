@@ -2,6 +2,7 @@
 members = [
     "apis/twitter",
     "utils",
+    "tools"
     #"utils/base64",
     #"utils/url_encode",
     #"utils/oauth",

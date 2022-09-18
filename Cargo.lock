@@ -865,6 +865,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "tools"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "tower-service"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -948,6 +956,7 @@ dependencies = [
  "chrono",
  "hmac-sha1",
  "reqwest",
+ "tokio",
 ]
 
 [[package]]
