@@ -4,10 +4,7 @@ use super::{
         oauth1::TwitterOAuth1Handler,
     },
     query::query::SearchQuery,
-    responses::{
-        rate_limit::TwitterRateLimit,
-        search::{TwitterSearchResponse, TwitterSearchResponseData},
-    },
+    responses::{rate_limit::TwitterRateLimit, search::TwitterSearchResponse},
 };
 use reqwest::{
     header::{HeaderMap, CONTENT_TYPE},
