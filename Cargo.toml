@@ -2,6 +2,7 @@
 members = [
     "apis/twitter",
     "apis/line",
+    "common",
     "utils",
     "tools"
     #"utils/base64",
