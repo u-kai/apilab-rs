@@ -1,10 +1,11 @@
 [workspace]
 members = [
+    "apis/deepl",
     "apis/twitter",
     "apis/line",
     "common",
     "utils",
-    "tools"
+    "tools",
     #"utils/base64",
     #"utils/url_encode",
     #"utils/oauth",
